@@ -27,16 +27,15 @@ public class MainActivity extends AppCompatActivity {
     static final int DATA_COUNT = 80;
     static final int DATA_ENTRIES = 10000;
     String[] actions = new String[DATA_ENTRIES];
-    double[] velocityX = new double[DATA_ENTRIES];
-    double[] velocityY = new double[DATA_ENTRIES];
     int[] touchIndices = new int[DATA_ENTRIES];
     String[] directions = new String[DATA_ENTRIES];
 
     List<Long> timeStamp = new ArrayList<>();
     List<Double> pressures = new ArrayList<>();
     List<Double> fingerSizes = new ArrayList<>();
-    List<Integer> coorX = new ArrayList<>();
-    List<Integer> coorY = new ArrayList<>();
+    List<Integer> coordX = new ArrayList<>();
+    List<Integer> coordY = new ArrayList<>();
+    List<String> directionLable = new ArrayList<>();
 
     private TextView swipeText;
 
@@ -176,16 +175,13 @@ public class MainActivity extends AppCompatActivity {
 //                        pressures[moveIndex] = motionEvent.getPressure();
 
                         // Velocity tracking
-                        mVelocityTracker.addMovement(motionEvent);
+                        // mVelocityTracker.addMovement(motionEvent);
                         // When you want to determine the velocity, call
                         // computeCurrentVelocity(). Then call getXVelocity()
                         // and getYVelocity() to retrieve the velocity for each pointer ID.
-                        mVelocityTracker.computeCurrentVelocity(1);
+                        // mVelocityTracker.computeCurrentVelocity(1);
                         // Log velocity of pixels per second
                         // Best practice to use VelocityTrackerCompat where possible.
-
-                        velocityX[moveIndex] = mVelocityTracker.getXVelocity(pointerId);
-                        velocityY[moveIndex] = mVelocityTracker.getYVelocity(pointerId);
 
                         // Count
                         touchIndices[moveIndex] = touchIndex;
@@ -217,11 +213,11 @@ public class MainActivity extends AppCompatActivity {
                         endY = (int) motionEvent.getY();
 
                         Direction direction = getDirection(startX, startY, endX, endY);
-                        directions[moveIndex] = direction.toString();
+                        directions[touchIndex] = direction.toString();
 
                         if (direction == Direction.down_up){
                             c1++;
-                            text1.setText("to up " + c1);
+                            text1.setText("to top " + c1);
                         }
                         else if (direction == Direction.bottomLeft_topRight) {
                             c2++;
@@ -237,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         else if (direction == Direction.up_down) {
                             c5++;
-                            text5.setText("to down" + c5);
+                            text5.setText("to bottom " + c5);
                         }
                         else if (direction == Direction.topRight_bottomLeft) {
                             c6++;
@@ -294,25 +290,25 @@ public class MainActivity extends AppCompatActivity {
         topLeft_bottomRight;
 
         public static Direction fromAngle(double angle){
-            if (inRange(angle, 68, 113)){
+            if (inRange(angle, 75, 105)){
                 return Direction.down_up;
             }
-            else if (inRange(angle, 22, 68)){
+            else if (inRange(angle, 15, 75)){
                 return Direction.bottomLeft_topRight;
             }
-            else if (inRange(angle, 0, 23) || inRange(angle, 337, 360)){
+            else if (inRange(angle, 0, 15) || inRange(angle, 345, 360)){
                 return Direction.left_right;
             }
-            else if (inRange(angle, 292, 338)){
+            else if (inRange(angle, 285, 345)){
                 return Direction.topLeft_bottomRight;
             }
-            else if (inRange(angle, 247, 293)){
+            else if (inRange(angle, 255, 285)){
                 return Direction.up_down;
             }
-            else if (inRange(angle, 202, 248)){
+            else if (inRange(angle, 195, 255)){
                 return Direction.topRight_bottomLeft;
             }
-            else if (inRange(angle, 157, 203)){
+            else if (inRange(angle, 165, 195)){
                 return Direction.right_left;
             }
             else {
@@ -339,6 +335,8 @@ public class MainActivity extends AppCompatActivity {
     public void samples(MotionEvent ev) {
         final int historySize = ev.getHistorySize();
         final int pointerCount = ev.getPointerCount();
+
+        mVelocityTracker.addMovement(ev);
         for (int h = 0; h < historySize; h++) {
             System.out.printf("At time %d:", ev.getHistoricalEventTime(h));
             timeStamp.add(ev.getHistoricalEventTime(h));
@@ -347,8 +345,8 @@ public class MainActivity extends AppCompatActivity {
                         ev.getHistoricalPressure(p, h));
                 pressures.add((double) ev.getHistoricalPressure(p, h));
                 fingerSizes.add((double) ev.getHistoricalSize(p, h));
-                coorX.add((int) ev.getHistoricalX(p, h));
-                coorY.add((int) ev.getHistoricalY(p, h));
+                coordX.add((int) ev.getHistoricalX(p, h));
+                coordY.add((int) ev.getHistoricalY(p, h));
             }
         }
         System.out.printf("At time %d:", ev.getEventTime());
@@ -358,42 +356,43 @@ public class MainActivity extends AppCompatActivity {
                     ev.getPressure(p));
             pressures.add((double) ev.getPressure(p));
             fingerSizes.add((double) ev.getSize(p));
-            coorX.add((int) ev.getX(p));
-            coorY.add((int) ev.getY(p));
+            coordX.add((int) ev.getX(p));
+            coordY.add((int) ev.getY(p));
         }
     }
 
     public void export(View view) {
         StringBuilder data = new StringBuilder();
         int count = 0;
+        int i = touchIndices[count];
 
-//        data.append("TouchIndex, MoveIndex, TimeStamp, Pressure, FingerSize\n");
+        data.append(directions[i]).append(",");
 
         do {
             int temp = touchIndices[count];
-
-            data.append(pressures.get(count)).append(",").append(fingerSizes.get(count)).append(",")
-            .append(directions[count]).append(",");
+            data.append(pressures.get(count)).append(",").
+                    append(fingerSizes.get(count)).append(",");
             count++;
-            if (temp != touchIndices[count]) {
-                data.append("\n");
+            if (temp != touchIndices[count] && actions[count] != null) {
+                i = touchIndices[count];
+                data.append("\n").append(directions[i]).append(",");;
             }
         } while (actions[count] != null);
 
         try {
             //Saving data to file
-            FileOutputStream out = openFileOutput("trainingData.csv", Context.MODE_PRIVATE);
+            FileOutputStream out = openFileOutput("training.csv", Context.MODE_PRIVATE);
             out.write(data.toString().getBytes());
             out.close();
 
             //Exporting
             Context context = getApplicationContext();
-            File fileLocation = new File(getFilesDir(), "trainingData.csv");
+            File fileLocation = new File(getFilesDir(), "training.csv");
             Uri path = FileProvider.getUriForFile(context, "com.example.swipeauth.fileProvider", fileLocation);
             Intent fileIntent = new Intent(Intent.ACTION_SEND);
 
             fileIntent.setType("text/csv");
-            fileIntent.putExtra(Intent.EXTRA_SUBJECT, "trainingData");
+            fileIntent.putExtra(Intent.EXTRA_SUBJECT, "training");
             fileIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             fileIntent.putExtra(Intent.EXTRA_STREAM, path);
 
