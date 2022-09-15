@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SwipeActivity"
+    android:background="#92cabf"
+    android:id="@+id/swipe">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/counter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:text=""
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="25dp" />
+
+        <TextView
+            android:id="@+id/instruction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/counter"
+            android:layout_centerInParent="true"
+            android:layout_marginBottom="20dp"
+            android:text="Click on next when you are ready to swipe"
+            android:textAlignment="center"
+            android:textColor="@color/black"
+            android:textSize="20dp" />
+
+        <TextView
+            android:id="@+id/arrowInstruction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="The arrow does not represent the exact angle for the swipe\nIt is only a general indicator of the current direction"
+            android:textAlignment="center"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/black"
+            android:layout_marginVertical="650dp"
+            android:visibility="invisible"/>
+
+        <Button
+            android:id="@+id/nextDButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="next"
+            android:text="Next"
+            android:textSize="30dp"
+            android:layout_marginVertical="500dp"
+            android:layout_centerHorizontal="true"
+            android:backgroundTint="#22cbb4"
+            android:textColor="@color/black"/>
+
+        <Button
+            android:id="@+id/exportButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="export"
+            android:text="Export"
+            android:textSize="30dp"
+            android:layout_marginVertical="500dp"
+            android:layout_centerHorizontal="true"
+            android:backgroundTint="#22cbb4"
+            android:textColor="@color/black"/>
+
+        <ImageView
+            android:id="@+id/arrowImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/down"
+            android:layout_centerHorizontal="true"
+            android:layout_marginVertical="500dp"
+            app:tint="@color/black"
+            android:visibility="invisible"
+            android:scaleType="fitXY"/>
+
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
