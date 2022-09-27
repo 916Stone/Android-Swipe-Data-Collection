@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -23,6 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SwipeActivity extends AppCompatActivity {
+    // velocity tracker
+    private VelocityTracker mVelocityTracker = null;
+
     // data storage
     static final int DATA_COUNT = 50;
     static final int DATA_ENTRIES = 10000;
@@ -37,6 +41,8 @@ public class SwipeActivity extends AppCompatActivity {
     List<Long> timeStamp = new ArrayList<>();
     List<Integer> coordX = new ArrayList<>();
     List<Integer> coordY = new ArrayList<>();
+    List<Double> xVelocity = new ArrayList<>();
+    List<Double> yVelocity = new ArrayList<>();
 
     private TextView instruction, counter, arrowIns;
     private Button exportButton, nextDButton;
@@ -97,9 +103,24 @@ public class SwipeActivity extends AppCompatActivity {
             @SuppressLint({"ClickableViewAccessibility", "SetTextI18n"})
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
+                int index = motionEvent.getActionIndex();
+                int action = motionEvent.getActionMasked();
+                int pointerId = motionEvent.getPointerId(index);
 
-                switch (motionEvent.getAction()) {
+                switch (action) {
                     case MotionEvent.ACTION_DOWN:
+
+                        if(mVelocityTracker == null) {
+                            // Retrieve a new VelocityTracker object to watch the
+                            // velocity of a motion.
+                            mVelocityTracker = VelocityTracker.obtain();
+                        }
+                        else {
+                            // Reset the velocity tracker back to its initial state.
+                            mVelocityTracker.clear();
+                        }
+                        // Add a user's movement to the tracker.
+                        mVelocityTracker.addMovement(motionEvent);
 
                         // action check
                         view.performClick();
@@ -118,6 +139,16 @@ public class SwipeActivity extends AppCompatActivity {
                         break;
 
                     case MotionEvent.ACTION_MOVE:
+
+                        mVelocityTracker.addMovement(motionEvent);
+                        // When you want to determine the velocity, call
+                        // computeCurrentVelocity(). Then call getXVelocity()
+                        // and getYVelocity() to retrieve the velocity for each pointer ID.
+                        mVelocityTracker.computeCurrentVelocity(1);
+                        // Log velocity of pixels per second
+                        // Best practice to use VelocityTrackerCompat where possible.
+                        xVelocity.add((double) mVelocityTracker.getXVelocity(pointerId));
+                        yVelocity.add((double) mVelocityTracker.getYVelocity(pointerId));
 
                         // Action check
                         System.out.println("Move");
@@ -160,6 +191,11 @@ public class SwipeActivity extends AppCompatActivity {
                         moveCount++;
                         swipeCount++;
 
+                        break;
+
+                    case MotionEvent.ACTION_CANCEL:
+                        // Return a VelocityTracker object back to be re-used by others.
+                        mVelocityTracker.recycle();
                         break;
 
                 }
@@ -333,8 +369,10 @@ public class SwipeActivity extends AppCompatActivity {
                 coordY.add((int) ev.getHistoricalY(p, h));
             }
         }
+
         System.out.printf("At time %d:", ev.getEventTime());
         timeStamp.add(ev.getEventTime());
+
         for (int p = 0; p < pointerCount; p++) {
             System.out.printf("  pressure: (%f)|  ",
                     ev.getPressure(p));
@@ -352,56 +390,69 @@ public class SwipeActivity extends AppCompatActivity {
         StringBuilder data2 = new StringBuilder();
         StringBuilder data3 = new StringBuilder();
         StringBuilder data4 = new StringBuilder();
+        StringBuilder data5 = new StringBuilder();
 
         int count = 0;
 
         for (String answer : answers)
             if (answer != null)
-                data4.append(answer).append(",");
+                data1.append(answer).append(",");
+            else
+                data1.append("\n");
 
         do {
             int temp = swipeId[count];
-            data1.append(pressures.get(count)).append(",");
-            data2.append(fingerSizes.get(count)).append(",");
-            data3.append(coordX.get(count)).append(":").append(coordY.get(count)).append(",");
+            data2.append(pressures.get(count)).append(",");
+            data3.append(fingerSizes.get(count)).append(",");
+            data4.append(coordX.get(count)).append(":").append(coordY.get(count)).append(",");
+            data5.append(timeStamp.get(count)).append(",");
+
             count++;
             if (temp != swipeId[count]) {
+                data1.append(swipeId[count]).append(",").append(directions[swipeId[count]]).append(",").append(duration.get(swipeId[count]))
+                        .append(",").append(xVelocity.get(swipeId[count])).append(",").append(yVelocity.get(swipeId[count])).append(",");
                 data1.append("\n");
                 data2.append("\n");
                 data3.append("\n");
-                data4.append("\n").append(directions[temp]).append(",").append(duration.get(temp)).append(",");
+                data4.append("\n");
+                data5.append("\n");
             }
         } while (actions[count] != null);
 
         try {
             // saving data to file
-            FileOutputStream out1 = openFileOutput("pressures.csv", Context.MODE_PRIVATE);
+            FileOutputStream out1 = openFileOutput("swipes.csv", Context.MODE_PRIVATE);
             out1.write(data1.toString().getBytes());
             out1.close();
 
-            FileOutputStream out2 = openFileOutput("sizes.csv", Context.MODE_PRIVATE);
+            FileOutputStream out2 = openFileOutput("pressures.csv", Context.MODE_PRIVATE);
             out2.write(data2.toString().getBytes());
             out2.close();
 
-            FileOutputStream out3 = openFileOutput("coords.csv", Context.MODE_PRIVATE);
+            FileOutputStream out3 = openFileOutput("sizes.csv", Context.MODE_PRIVATE);
             out3.write(data3.toString().getBytes());
             out3.close();
 
-            FileOutputStream out4 = openFileOutput("swipes.csv", Context.MODE_PRIVATE);
+            FileOutputStream out4 = openFileOutput("coords.csv", Context.MODE_PRIVATE);
             out4.write(data4.toString().getBytes());
             out4.close();
 
+            FileOutputStream out5 = openFileOutput("timestamp.csv", Context.MODE_PRIVATE);
+            out5.write(data5.toString().getBytes());
+            out5.close();
+
             // file provider and path
             Context context = getApplicationContext();
-            File location1 = new File(getFilesDir(), "pressures.csv");
+            File location1 = new File(getFilesDir(), "swipes.csv");
             Uri path1 = FileProvider.getUriForFile(context, "com.example.datacollection.fileProvider", location1);
-            File location2 = new File(getFilesDir(), "sizes.csv");
+            File location2 = new File(getFilesDir(), "pressures.csv");
             Uri path2 = FileProvider.getUriForFile(context, "com.example.datacollection.fileProvider", location2);
-            File location3 = new File(getFilesDir(), "coords.csv");
+            File location3 = new File(getFilesDir(), "sizes.csv");
             Uri path3 = FileProvider.getUriForFile(context, "com.example.datacollection.fileProvider", location3);
-            File location4 = new File(getFilesDir(), "swipes.csv");
+            File location4 = new File(getFilesDir(), "coords.csv");
             Uri path4 = FileProvider.getUriForFile(context, "com.example.datacollection.fileProvider", location4);
-
+            File location5 = new File(getFilesDir(), "timestamp.csv");
+            Uri path5 = FileProvider.getUriForFile(context, "com.example.datacollection.fileProvider", location5);
 
             // output file list
             ArrayList<Uri> files = new ArrayList<>();
@@ -409,6 +460,7 @@ public class SwipeActivity extends AppCompatActivity {
             files.add(path2);
             files.add(path3);
             files.add(path4);
+            files.add(path5);
 
             // share intent
             Intent fileIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
